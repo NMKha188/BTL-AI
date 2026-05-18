@@ -211,7 +211,53 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        def alphaBetaPrunning(state, agentIndex, depth,alpha,beta):
+            if state.isLose() or state.isWin():
+                return self.evaluationFunction(state)
+            if agentIndex >= state.getNumAgents():
+                depth = depth +1
+                agentIndex = 0
+            if depth >= self.depth:
+                return self.evaluationFunction(state)
+            if agentIndex == 0:
+                return maxValue(state, agentIndex, depth, alpha, beta)
+            else:
+                return minValue(state, agentIndex, depth,alpha, beta)
+        def maxValue(state, agentIndex, depth,alpha,beta):
+            bestVal = -float('inf')
+            for action in state.getLegalActions(agentIndex):
+                successor = state.generateSuccessor(agentIndex, action)
+                val = alphaBetaPrunning(successor,1,depth,alpha,beta)
+                if val > bestVal:
+                    bestVal = val
+                alpha = max(bestVal,alpha)
+                if alpha > beta:
+                    return bestVal
+            return bestVal
+
+        def minValue(state, agentIndex, depth,alpha,beta):
+            worseVal = float('inf')
+            for action in state.getLegalActions(agentIndex):
+                successor = state.generateSuccessor(agentIndex, action)
+                val = alphaBetaPrunning(successor,agentIndex+1,depth,alpha,beta)
+                if val < worseVal:
+                    worseVal = val
+                beta = min(worseVal,beta)
+                if alpha > beta:
+                    return worseVal
+            return worseVal
+        bestAction = None
+        bestVal = -float('inf')
+        alpha = -float('inf')
+        beta = float('inf')
+        for action in gameState.getLegalActions(0):
+            successor = gameState.generateSuccessor(0, action)
+            val = alphaBetaPrunning(successor,1,0,alpha,beta)
+            if(val>bestVal):
+                bestVal = val
+                bestAction = action
+            alpha = max(alpha, bestVal)
+        return bestAction
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
