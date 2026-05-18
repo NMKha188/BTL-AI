@@ -67,30 +67,42 @@ class ReflexAgent(Agent):
         Print out these variables to see what you're getting, then combine them
         to create a masterful evaluation function.
         """
-        # Useful information you can extract from a GameState (pacman.py)
+         # Useful information you can extract from a GameState (pacman.py)
         successorGameState = currentGameState.generatePacmanSuccessor(action)
         newPos = successorGameState.getPacmanPosition()
-        newFood = successorGameState.getFood().asList()
-        newGhostStates = successorGameState.getGhostStates()
-        newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
+        newFood = successorGameState.getFood()
+        newFoodList = newFood.asList()                               
+        newGhostStates = successorGameState.getGhostStates()                              
+        newGhostPositions = [ghostState.getPosition() for ghostState in newGhostStates]   
+        newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]        
 
         "*** YOUR CODE HERE ***"
-        score = successorGameState.getScore()
+        evaluationScore = successorGameState.getScore()
 
-        for ghostState in newGhostStates:
-            if ghostState.scaredTimer == 0: 
-                ghostPos = ghostState.getPosition()
-                dist = util.manhattanDistance(newPos, ghostPos)
-                if dist <= 1:
-                    return -float('inf') 
+        nearestDistance = float('inf')
+        for food in newFoodList:
+            distance = manhattanDistance(food, newPos)
+            if distance < nearestDistance:
+                nearestDistance = distance
+        if nearestDistance == 0:
+                evaluationScore += 10
+        else:
+            evaluationScore += 10 / nearestDistance
+    
+        for i in range(len(newGhostPositions)):
+            distance = manhattanDistance(newGhostPositions[i], newPos)
+            if (newScaredTimes[i] == 0):
+                if distance <= 1:
+                    evaluationScore -= 500
                 else:
-                    return 1/dist**2
+                    evaluationScore -= 1 / distance ** 2
+            else:
+                if distance == 0:
+                    evaluationScore += 200
+                else: 
+                    evaluationScore += 1 / distance ** 2
 
-        if newFood:
-            minFoodDist = min([util.manhattanDistance(newPos, food) for food in newFood])
-            score += 1/ (minFoodDist + 1)
-
-        return score
+        return evaluationScore
 
 def scoreEvaluationFunction(currentGameState: GameState):
     """
@@ -219,20 +231,19 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                 if val > bestVal:
                     bestVal = val
                 alpha = max(bestVal,alpha)
-                if alpha >= beta:
+                if alpha > beta:
                     return bestVal
             return bestVal
 
         def minValue(state, agentIndex, depth,alpha,beta):
             worseVal = float('inf')
-            agentIndex = agentIndex + 1
             for action in state.getLegalActions(agentIndex):
                 successor = state.generateSuccessor(agentIndex, action)
-                val = alphaBetaPrunning(successor,agentIndex,depth,alpha,beta)
+                val = alphaBetaPrunning(successor,agentIndex+1,depth,alpha,beta)
                 if val < worseVal:
                     worseVal = val
                 beta = min(worseVal,beta)
-                if alpha >= beta:
+                if alpha > beta:
                     return worseVal
             return worseVal
         bestAction = None
@@ -245,6 +256,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
             if(val>bestVal):
                 bestVal = val
                 bestAction = action
+            alpha = max(alpha, bestVal)
         return bestAction
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
